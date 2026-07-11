@@ -541,12 +541,27 @@ Tensor dg_fp8_fp4_paged_mqa_logits(TensorView q, Optional<TensorView> q_sf, Tens
     return Tensor::FromDLPack(at::toDLPack(result));
 }
 
+Tensor dg_bf16_paged_mqa_logits(TensorView q, TensorView fused_kv_cache,
+                              TensorView weights, TensorView context_lens,
+                              TensorView block_table, TensorView schedule_meta,
+                              int64_t max_context_len, bool clean_logits,
+                              Optional<TensorView> indices) {
+    auto indices_val = indices.has_value()? std::optional(convert_to_torch_tensor(indices.value())) : std::nullopt;
+    auto result = attention::bf16_paged_mqa_logits(
+        convert_to_torch_tensor(q), convert_to_torch_tensor(fused_kv_cache),
+        convert_to_torch_tensor(weights), convert_to_torch_tensor(context_lens),
+        convert_to_torch_tensor(block_table), convert_to_torch_tensor(schedule_meta),
+        static_cast<int>(max_context_len), clean_logits, indices_val);
+    return Tensor::FromDLPack(at::toDLPack(result));
+}
+
 TVM_FFI_DLL_EXPORT_TYPED_FUNC(fp8_gemm_nt_skip_head_mid, dg_fp8_gemm_nt_skip_head_mid);
 TVM_FFI_DLL_EXPORT_TYPED_FUNC(fp8_mqa_logits, dg_fp8_mqa_logits);
 TVM_FFI_DLL_EXPORT_TYPED_FUNC(get_paged_mqa_logits_metadata, dg_get_paged_mqa_logits_metadata);
 TVM_FFI_DLL_EXPORT_TYPED_FUNC(fp8_paged_mqa_logits, dg_fp8_paged_mqa_logits);
 TVM_FFI_DLL_EXPORT_TYPED_FUNC(fp8_fp4_mqa_logits, dg_fp8_fp4_mqa_logits);
 TVM_FFI_DLL_EXPORT_TYPED_FUNC(fp8_fp4_paged_mqa_logits, dg_fp8_fp4_paged_mqa_logits);
+TVM_FFI_DLL_EXPORT_TYPED_FUNC(bf16_paged_mqa_logits, dg_bf16_paged_mqa_logits);
 
 // Mega MoE
 int64_t dg_get_token_alignment_for_mega_moe() {
